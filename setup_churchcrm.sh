@@ -45,7 +45,7 @@ y
 EOF
 
 # Install PHP and necessary extensions
-sudo apt install -y php libapache2-mod-php php-mysql php-gmp php-curl php-intl php-mbstring php-xmlrpc php-gd php-bcmath php-imap php-xml php-cli php-zip
+#sudo apt install -y php libapache2-mod-php php-mysql php-gmp php-curl php-intl php-mbstring php-xmlrpc php-gd php-bcmath php-imap php-xml php-cli php-zip
 
 # Prompt user for PHP settings or use defaults if blank
 read -p "Enter max_execution_time (leave blank for default 360): " max_execution_time
