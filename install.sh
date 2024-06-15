@@ -122,7 +122,13 @@ sudo sed -i '/<IfModule mod_dir.c>/,/<\/IfModule>/c\<IfModule mod_dir.c>\n    Di
 # Restart Apache to apply the configuration changes
 sudo systemctl restart apache2
 
+# Output all new passwords
 echo "Installation and configuration complete. Visit your server's URL to complete the ChurchCRM setup."
-echo "Initial login credentials:"
+echo "Initial login credentials for ChurchCRM:"
 echo "Username: Admin"
 echo "Password: changeme"
+echo
+echo "New passwords:"
+echo "MySQL root password: $new_mysql_password"
+echo "ChurchCRM database username: churchcrmuser"
+echo "ChurchCRM database user password: $db_user_password"
