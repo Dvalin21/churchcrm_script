@@ -71,10 +71,16 @@ FLUSH PRIVILEGES;
 EXIT;
 EOF
 
+# Install jq for processing JSON
+sudo apt install -y jq
+
+# Get the latest ChurchCRM release URL
+latest_release_url=$(curl -s https://api.github.com/repos/ChurchCRM/CRM/releases/latest | jq -r '.assets[] | select(.name | test("zip$")) | .browser_download_url')
+
 # Download and extract ChurchCRM
-sudo wget https://github.com/ChurchCRM/CRM/releases/download/5.7.0/ChurchCRM-5.7.0.zip
+sudo wget "$latest_release_url" -O ChurchCRM-latest.zip
 sudo apt install -y unzip
-sudo unzip ChurchCRM-5.7.0.zip -d /var/www/
+sudo unzip ChurchCRM-latest.zip -d /var/www/
 sudo mv /var/www/churchcrm /var/www/churchcrm
 
 # Set permissions for ChurchCRM
