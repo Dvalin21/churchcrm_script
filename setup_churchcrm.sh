@@ -131,5 +131,6 @@ echo "Password: changeme"
 echo
 echo "New passwords:"
 echo "MySQL root password: $new_mysql_password"
+echo "ChurchCRM database name: churchcrm"
 echo "ChurchCRM database username: churchcrmuser"
 echo "ChurchCRM database user password: $db_user_password"
