@@ -47,14 +47,36 @@ EOF
 # Install PHP and necessary extensions
 sudo apt install -y php libapache2-mod-php php-mysql php-gmp php-curl php-intl php-mbstring php-xmlrpc php-gd php-bcmath php-imap php-xml php-cli php-zip
 
+# Prompt user for PHP settings or use defaults if blank
+read -p "Enter max_execution_time (leave blank for default 360): " max_execution_time
+max_execution_time=${max_execution_time:-360}
+
+read -p "Enter file_uploads (On/Off, leave blank for default On): " file_uploads
+file_uploads=${file_uploads:-On}
+
+read -p "Enter memory_limit (leave blank for default 256M): " memory_limit
+memory_limit=${memory_limit:-256M}
+
+read -p "Enter upload_max_filesize (leave blank for default 100M): " upload_max_filesize
+upload_max_filesize=${upload_max_filesize:-100M}
+
+read -p "Enter allow_url_fopen (On/Off, leave blank for default On): " allow_url_fopen
+allow_url_fopen=${allow_url_fopen:-On}
+
+read -p "Enter short_open_tag (On/Off, leave blank for default On): " short_open_tag
+short_open_tag=${short_open_tag:-On}
+
+read -p "Enter your timezone (e.g., America/Chicago, leave blank for default America/Chicago): " user_timezone
+user_timezone=${user_timezone:-America/Chicago}
+
 # Update PHP settings
-sudo sed -i 's/max_execution_time = .*/max_execution_time = 360/' /etc/php/8.1/apache2/php.ini
-sudo sed -i 's/file_uploads = .*/file_uploads = On/' /etc/php/8.1/apache2/php.ini
-sudo sed -i 's/memory_limit = .*/memory_limit = 256M/' /etc/php/8.1/apache2/php.ini
-sudo sed -i 's/upload_max_filesize = .*/upload_max_filesize = 100M/' /etc/php/8.1/apache2/php.ini
-sudo sed -i 's/allow_url_fopen = .*/allow_url_fopen = On/' /etc/php/8.1/apache2/php.ini
-sudo sed -i 's/short_open_tag = .*/short_open_tag = On/' /etc/php/8.1/apache2/php.ini
-sudo sed -i 's/;date.timezone =.*/date.timezone = America\/Chicago/' /etc/php/8.1/apache2/php.ini
+sudo sed -i "s/max_execution_time = .*/max_execution_time = $max_execution_time/" /etc/php/8.1/apache2/php.ini
+sudo sed -i "s/file_uploads = .*/file_uploads = $file_uploads/" /etc/php/8.1/apache2/php.ini
+sudo sed -i "s/memory_limit = .*/memory_limit = $memory_limit/" /etc/php/8.1/apache2/php.ini
+sudo sed -i "s/upload_max_filesize = .*/upload_max_filesize = $upload_max_filesize/" /etc/php/8.1/apache2/php.ini
+sudo sed -i "s/allow_url_fopen = .*/allow_url_fopen = $allow_url_fopen/" /etc/php/8.1/apache2/php.ini
+sudo sed -i "s/short_open_tag = .*/short_open_tag = $short_open_tag/" /etc/php/8.1/apache2/php.ini
+sudo sed -i "s|;date.timezone =.*|date.timezone = ${user_timezone}|" /etc/php/8.1/apache2/php.ini
 
 # Restart Apache to apply changes
 sudo systemctl restart apache2
