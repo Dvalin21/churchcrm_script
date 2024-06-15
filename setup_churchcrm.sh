@@ -114,6 +114,7 @@ EOF"
 # Enable the ChurchCRM site and rewrite module
 sudo a2ensite churchcrm.conf
 sudo a2enmod rewrite
+sudo a2dissite 000-default.conf
 sudo systemctl restart apache2
 
 # Update DirectoryIndex to prioritize index.php
