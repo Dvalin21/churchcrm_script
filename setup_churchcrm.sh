@@ -104,7 +104,7 @@ latest_release_url=$(curl -s https://api.github.com/repos/ChurchCRM/CRM/releases
 sudo wget "$latest_release_url" -O ChurchCRM-latest.zip
 sudo apt install -y unzip
 sudo unzip ChurchCRM-latest.zip -d /var/www/
-sudo mv /var/www/churchcrm /var/www/churchcrm
+#sudo mv /var/www/churchcrm /var/www/churchcrm
 
 # Set permissions for ChurchCRM
 sudo chown -R www-data:www-data /var/www/churchcrm/
