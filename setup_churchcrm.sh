@@ -7,6 +7,11 @@ function check_package() {
     dpkg -l | grep -qw "$1" || sudo apt install -y "$1"
 }
 
+# Function to uninstall packages
+function uninstall_package() {
+    sudo apt remove --purge -y "$1"
+}
+
 # Function to undo MySQL setup
 function undo_mysql_setup() {
     read -p "Are you sure you want to undo MySQL setup? This will delete the ChurchCRM database and user. (y/n): " confirm
