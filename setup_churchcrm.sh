@@ -1,75 +1,47 @@
 #!/bin/bash
 
-set -e  # Exit immediately if a command exits with a non-zero status
-
 # Function to check if a package is installed
 function check_package() {
     dpkg -l | grep -qw "$1" || sudo apt install -y "$1"
 }
 
-# Function to uninstall packages
-function uninstall_package() {
-    sudo apt remove --purge -y "$1"
-}
+# Update package list and upgrade all packages
+sudo apt update
+sudo apt upgrade -y
 
-# Function to undo MySQL setup
-function undo_mysql_setup() {
-    read -p "Are you sure you want to undo MySQL setup? This will delete the ChurchCRM database and user. (y/n): " confirm
-    if [[ $confirm == [yY]* ]]; then
-        sudo mysql -u root -p"$new_mysql_password" <<EOF
-DROP DATABASE IF EXISTS churchcrm;
-DROP USER IF EXISTS 'churchcrmuser'@'localhost';
-FLUSH PRIVILEGES;
-EOF
-    else
-        echo "Undo MySQL setup aborted."
-        exit 0
-    fi
-}
+# Install necessary packages
+check_package apache2
+check_package mysql-server
+check_package unzip
+check_package jq
 
-# Function to prompt user input with default values
-function prompt_with_default() {
-    local prompt="$1"
-    local default="$2"
-    read -p "$prompt [$default]: " input
-    echo "${input:-$default}"
-}
+# Allow Apache through the firewall
+sudo ufw allow in "Apache"
+sudo ufw allow in "OpenSSH"
+sudo ufw allow 80
+sudo ufw allow 443
 
-# Function to install ChurchCRM
-function install_churchcrm() {
-    echo "Welcome to ChurchCRM installation script."
-    echo "This script will guide you through setting up ChurchCRM on your server."
+sudo ufw status
 
-    # Update package list and upgrade all packages
-    sudo apt update
-    sudo apt upgrade -y
+# Secure MySQL installation
+sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';"
 
-    # Install necessary packages
-    check_package apache2
-    check_package mysql-server
-    check_package unzip
-    check_package jq
+# Prompt user for MySQL root password and new password
+read -sp "Enter current MySQL root password (leave empty if not set): " current_mysql_password
+echo
+read -sp "Enter new MySQL root password: " new_mysql_password
+echo
+read -sp "Confirm new MySQL root password: " confirm_mysql_password
+echo
 
-    # Allow Apache through the firewall
-    sudo ufw allow in "Apache"
-    sudo ufw status
+# Check if the new passwords match
+if [ "$new_mysql_password" != "$confirm_mysql_password" ]; then
+    echo "Passwords do not match. Exiting."
+    exit 1
+fi
 
-    # Secure MySQL installation
-    sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';"
-
-    # Prompt user for MySQL root password and new password
-    current_mysql_password=$(prompt_with_default "Enter current MySQL root password (leave empty if not set)" "")
-    new_mysql_password=$(prompt_with_default "Enter new MySQL root password" "password")
-    confirm_mysql_password=$(prompt_with_default "Confirm new MySQL root password" "password")
-
-    # Check if the new passwords match
-    if [ "$new_mysql_password" != "$confirm_mysql_password" ]; then
-        echo "Passwords do not match. Exiting."
-        exit 1
-    fi
-
-    # Run mysql_secure_installation with user inputs
-    sudo mysql_secure_installation <<EOF
+# Run mysql_secure_installation with user inputs
+sudo mysql_secure_installation <<EOF
 
 $current_mysql_password
 y
@@ -81,39 +53,41 @@ y
 y
 EOF
 
-    # Detect installed PHP version
-    php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
-    php_ini="/etc/php/$php_version/apache2/php.ini"
+# Detect installed PHP version
+php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+php_ini="/etc/php/$php_version/apache2/php.ini"
 
-    # Install PHP and necessary extensions
-    sudo apt install -y "php$php_version" "libapache2-mod-php$php_version" "php${php_version}-mysql" "php${php_version}-gmp" "php${php_version}-curl" "php${php_version}-intl" "php${php_version}-mbstring" "php${php_version}-xmlrpc" "php${php_version}-gd" "php${php_version}-bcmath" "php${php_version}-imap" "php${php_version}-xml" "php${php_version}-cli" "php${php_version}-zip"
+# Install PHP and necessary extensions
+sudo apt install -y php libapache2-mod-php php-mysql php-gmp php-curl php-intl php-mbstring php-xmlrpc php-gd php-bcmath php-imap php-xml php-cli php-zip
 
-    # Prompt user for PHP settings or use defaults
-    max_execution_time=$(prompt_with_default "Enter max_execution_time" "30")
-    memory_limit=$(prompt_with_default "Enter memory_limit" "128M")
-    upload_max_filesize=$(prompt_with_default "Enter upload_max_filesize" "2M")
-    post_max_size=$(prompt_with_default "Enter post_max_size" "8M")
-    date_timezone=$(prompt_with_default "Enter date.timezone" "UTC")
+# Prompt user for PHP settings or use defaults
+read -p "Enter max_execution_time (default 30): " max_execution_time
+max_execution_time=${max_execution_time:-30}
+read -p "Enter memory_limit (default 128M): " memory_limit
+memory_limit=${memory_limit:-128M}
+read -p "Enter upload_max_filesize (default 2M): " upload_max_filesize
+upload_max_filesize=${upload_max_filesize:-2M}
+read -p "Enter post_max_size (default 8M): " post_max_size
+post_max_size=${post_max_size:-8M}
+read -p "Enter date.timezone (default UTC): " date_timezone
+date_timezone=${date_timezone:-UTC}
 
-    # Update PHP settings
-    sudo sed -i "s/^max_execution_time = .*/max_execution_time = $max_execution_time/" "$php_ini"
-    sudo sed -i "s/^memory_limit = .*/memory_limit = $memory_limit/" "$php_ini"
-    sudo sed -i "s/^upload_max_filesize = .*/upload_max_filesize = $upload_max_filesize/" "$php_ini"
-    sudo sed -i "s/^post_max_size = .*/post_max_size = $post_max_size/" "$php_ini"
-    sudo sed -i "s~^;date.timezone =.*~date.timezone = $date_timezone~" "$php_ini"
+# Update PHP settings
+sudo sed -i "s/^max_execution_time = .*/max_execution_time = $max_execution_time/" "$php_ini"
+sudo sed -i "s/^memory_limit = .*/memory_limit = $memory_limit/" "$php_ini"
+sudo sed -i "s/^upload_max_filesize = .*/upload_max_filesize = $upload_max_filesize/" "$php_ini"
+sudo sed -i "s/^post_max_size = .*/post_max_size = $post_max_size/" "$php_ini"
+sudo sed -i "s~^;date.timezone =.*~date.timezone = $date_timezone~" "$php_ini"
 
-    # Enable the correct PHP module
-    sudo a2enmod "php$php_version"
-    sudo systemctl restart apache2
+# Restart Apache to apply changes
+sudo systemctl restart apache2
 
-    # Restart Apache to apply changes
-    sudo systemctl restart apache2
+# Prompt user for new database user password
+read -sp "Enter password for new database user 'churchcrmuser': " db_user_password
+echo
 
-    # Prompt user for new database user password
-    db_user_password=$(prompt_with_default "Enter password for new database user 'churchcrmuser'" "password")
-
-    # Create MySQL database and user
-    sudo mysql -u root -p"$new_mysql_password" <<EOF
+# Create MySQL database and user
+sudo mysql -u root -p"$new_mysql_password" <<EOF
 CREATE DATABASE churchcrm;
 CREATE USER 'churchcrmuser'@'localhost' IDENTIFIED BY '$db_user_password';
 GRANT ALL ON churchcrm.* TO 'churchcrmuser'@'localhost' WITH GRANT OPTION;
@@ -121,90 +95,61 @@ FLUSH PRIVILEGES;
 EXIT;
 EOF
 
-    # Get the latest ChurchCRM release URL
-    latest_release_url=$(curl -s https://api.github.com/repos/ChurchCRM/CRM/releases/latest | jq -r '.assets[] | select(.name | test("zip$")) | .browser_download_url')
+# Get the latest ChurchCRM release URL
+latest_release_url=$(curl -s https://api.github.com/repos/ChurchCRM/CRM/releases/latest | jq -r '.assets[] | select(.name | test("zip$")) | .browser_download_url')
 
-    # Download and extract ChurchCRM
-    sudo wget "$latest_release_url" -O ChurchCRM-latest.zip
-    sudo unzip ChurchCRM-latest.zip -d /var/www/
+# Download and extract ChurchCRM
+sudo wget "$latest_release_url" -O ChurchCRM-latest.zip
+sudo unzip ChurchCRM-latest.zip -d /var/www/
 
-    # Set permissions for ChurchCRM
-    sudo chown -R www-data:www-data /var/www/churchcrm/
-    sudo chmod -R 755 /var/www/churchcrm/
+# Set permissions for ChurchCRM
+sudo chown -R www-data:www-data /var/www/churchcrm/
+sudo chmod -R 755 /var/www/churchcrm/
 
-    # Prompt user for Apache configuration details
-    server_admin=$(prompt_with_default "Enter ServerAdmin email" "admin@example.com")
-    server_name=$(prompt_with_default "Enter ServerName" "example.com")
-    server_alias=$(prompt_with_default "Enter ServerAlias" "www.example.com")
+# Prompt user for Apache configuration details
+read -p "Enter ServerAdmin email (e.g., admin@example.com): " server_admin
+read -p "Enter ServerName (e.g., example.com): " server_name
+read -p "Enter ServerAlias (e.g., www.example.com): " server_alias
 
-    # Create Apache configuration file for ChurchCRM
-    sudo bash -c "cat <<EOF > /etc/apache2/sites-available/churchcrm.conf
+# Create Apache configuration file for ChurchCRM
+sudo bash -c "cat <<EOF > /etc/apache2/sites-available/churchcrm.conf
 <VirtualHost *:80>
-    ServerAdmin $server_admin
-    DocumentRoot /var/www/churchcrm
-    ServerName $server_name
-    ServerAlias $server_alias
+     ServerAdmin $server_admin
+     DocumentRoot /var/www/churchcrm
+     ServerName $server_name
+     ServerAlias $server_alias
 
-    <Directory /var/www/churchcrm/>
-        Options FollowSymlinks
-        AllowOverride All
-        Require all granted
-    </Directory>
+     <Directory /var/www/churchcrm/>
+          Options FollowSymlinks
+          AllowOverride All
+          Require all granted
+     </Directory>
 
-    <FilesMatch \.php$>
-        SetHandler application/x-httpd-php
-    </FilesMatch>
-
-    ErrorLog \${APACHE_LOG_DIR}/error.log
-    CustomLog \${APACHE_LOG_DIR}/access.log combined
+     ErrorLog \${APACHE_LOG_DIR}/error.log
+     CustomLog \${APACHE_LOG_DIR}/access.log combined
 </VirtualHost>
 EOF"
 
-    # Enable the ChurchCRM site and rewrite module
-    sudo a2ensite churchcrm.conf
-    sudo a2enmod rewrite
-    sudo systemctl restart apache2
+# Enable the ChurchCRM site and rewrite module
+sudo a2ensite churchcrm.conf
+sudo a2enmod rewrite
+sudo a2dissite 000-default.conf
+sudo systemctl restart apache2
 
-    # Update DirectoryIndex to prioritize index.php
-    sudo sed -i '/<IfModule mod_dir.c>/,/<\/IfModule>/c\<IfModule mod_dir.c>\n    DirectoryIndex index.php index.html index.cgi index.pl index.xhtml index.htm\n<\/IfModule>' /etc/apache2/mods-enabled/dir.conf
+# Update DirectoryIndex to prioritize index.php
+sudo sed -i '/<IfModule mod_dir.c>/,/<\/IfModule>/c\<IfModule mod_dir.c>\n    DirectoryIndex index.php index.html index.cgi index.pl index.xhtml index.htm\n<\/IfModule>' /etc/apache2/mods-enabled/dir.conf
 
-    # Restart Apache to apply the configuration changes
-    sudo systemctl restart apache2
+# Restart Apache to apply the configuration changes
+sudo systemctl restart apache2
 
-    # Mark the installation as complete by creating the flag file
-    sudo touch "/var/tmp/churchcrm_install_flag"
-
-    # Output all new passwords and setup information
-    echo "Installation and configuration complete. Visit your server's URL to complete the ChurchCRM setup."
-    echo "Initial login credentials for ChurchCRM:"
-    echo "Username: Admin"
-    echo "Password: changeme"
-    echo
-    echo "New passwords:"
-    echo "MySQL root password: $new_mysql_password"
-    echo "ChurchCRM database name: churchcrm"
-    echo "ChurchCRM database username: churchcrmuser"
-    echo "ChurchCRM database user password: $db_user_password"
-}
-
-# Main script starts here
-
-# Prompt user whether to install or undo setup
-echo "Welcome to ChurchCRM setup script."
-echo "Do you want to (i)nstall ChurchCRM or (u)ndo MySQL setup? (i/u): "
-read choice
-
-case "$choice" in
-    i|I)
-        install_churchcrm
-        ;;
-    u|U)
-        undo_mysql_setup
-        ;;
-    *)
-        echo "Invalid choice. Exiting."
-        exit 1
-        ;;
-esac
-
-exit 0
+# Output all new passwords
+echo "Installation and configuration complete. Visit your server's URL to complete the ChurchCRM setup."
+echo "Initial login credentials for ChurchCRM:"
+echo "Username: Admin"
+echo "Password: changeme"
+echo
+echo "New passwords:"
+echo "MySQL root password: $new_mysql_password"
+echo "ChurchCRM database name: churchcrm"
+echo "ChurchCRM database username: churchcrmuser"
+echo "ChurchCRM database user password: $db_user_password"
