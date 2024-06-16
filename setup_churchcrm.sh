@@ -1,18 +1,23 @@
 #!/bin/bash
 
-# Update package list
+# Function to check if a package is installed
+function check_package() {
+    dpkg -l | grep -qw "$1" || sudo apt install -y "$1"
+}
+
+# Update package list and upgrade all packages
 sudo apt update
 sudo apt upgrade -y
 
-# Install Apache
-sudo apt install -y apache2
+# Install necessary packages
+check_package apache2
+check_package mysql-server
+check_package unzip
+check_package jq
 
 # Allow Apache through the firewall
 sudo ufw allow in "Apache"
 sudo ufw status
-
-# Install MySQL
-sudo apt install -y mysql-server
 
 # Secure MySQL installation
 sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';"
@@ -44,39 +49,31 @@ y
 y
 EOF
 
+# Detect installed PHP version
+php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+php_ini="/etc/php/$php_version/apache2/php.ini"
+
 # Install PHP and necessary extensions
 sudo apt install -y php libapache2-mod-php php-mysql php-gmp php-curl php-intl php-mbstring php-xmlrpc php-gd php-bcmath php-imap php-xml php-cli php-zip
 
-# Prompt user for PHP settings or use defaults if blank
-read -p "Enter max_execution_time (leave blank for default 360): " max_execution_time
-max_execution_time=${max_execution_time:-360}
-
-read -p "Enter file_uploads (On/Off, leave blank for default On): " file_uploads
-file_uploads=${file_uploads:-On}
-
-read -p "Enter memory_limit (leave blank for default 256M): " memory_limit
-memory_limit=${memory_limit:-256M}
-
-read -p "Enter upload_max_filesize (leave blank for default 100M): " upload_max_filesize
-upload_max_filesize=${upload_max_filesize:-100M}
-
-read -p "Enter allow_url_fopen (On/Off, leave blank for default On): " allow_url_fopen
-allow_url_fopen=${allow_url_fopen:-On}
-
-read -p "Enter short_open_tag (On/Off, leave blank for default On): " short_open_tag
-short_open_tag=${short_open_tag:-On}
-
-read -p "Enter your timezone (e.g., America/Chicago, leave blank for default America/Chicago): " user_timezone
-user_timezone=${user_timezone:-America/Chicago}
+# Prompt user for PHP settings or use defaults
+read -p "Enter max_execution_time (default 30): " max_execution_time
+max_execution_time=${max_execution_time:-30}
+read -p "Enter memory_limit (default 128M): " memory_limit
+memory_limit=${memory_limit:-128M}
+read -p "Enter upload_max_filesize (default 2M): " upload_max_filesize
+upload_max_filesize=${upload_max_filesize:-2M}
+read -p "Enter post_max_size (default 8M): " post_max_size
+post_max_size=${post_max_size:-8M}
+read -p "Enter date.timezone (default UTC): " date_timezone
+date_timezone=${date_timezone:-UTC}
 
 # Update PHP settings
-sudo sed -i "s/max_execution_time = .*/max_execution_time = $max_execution_time/" /etc/php/8.1/apache2/php.ini
-sudo sed -i "s/file_uploads = .*/file_uploads = $file_uploads/" /etc/php/8.1/apache2/php.ini
-sudo sed -i "s/memory_limit = .*/memory_limit = $memory_limit/" /etc/php/8.1/apache2/php.ini
-sudo sed -i "s/upload_max_filesize = .*/upload_max_filesize = $upload_max_filesize/" /etc/php/8.1/apache2/php.ini
-sudo sed -i "s/allow_url_fopen = .*/allow_url_fopen = $allow_url_fopen/" /etc/php/8.1/apache2/php.ini
-sudo sed -i "s/short_open_tag = .*/short_open_tag = $short_open_tag/" /etc/php/8.1/apache2/php.ini
-sudo sed -i "s|;date.timezone =.*|date.timezone = ${user_timezone}|" /etc/php/8.1/apache2/php.ini
+sudo sed -i "s/^max_execution_time = .*/max_execution_time = $max_execution_time/" "$php_ini"
+sudo sed -i "s/^memory_limit = .*/memory_limit = $memory_limit/" "$php_ini"
+sudo sed -i "s/^upload_max_filesize = .*/upload_max_filesize = $upload_max_filesize/" "$php_ini"
+sudo sed -i "s/^post_max_size = .*/post_max_size = $post_max_size/" "$php_ini"
+sudo sed -i "s~^;date.timezone =.*~date.timezone = $date_timezone~" "$php_ini"
 
 # Restart Apache to apply changes
 sudo systemctl restart apache2
@@ -94,17 +91,12 @@ FLUSH PRIVILEGES;
 EXIT;
 EOF
 
-# Install jq for processing JSON
-sudo apt install -y jq
-
 # Get the latest ChurchCRM release URL
 latest_release_url=$(curl -s https://api.github.com/repos/ChurchCRM/CRM/releases/latest | jq -r '.assets[] | select(.name | test("zip$")) | .browser_download_url')
 
 # Download and extract ChurchCRM
 sudo wget "$latest_release_url" -O ChurchCRM-latest.zip
-sudo apt install -y unzip
 sudo unzip ChurchCRM-latest.zip -d /var/www/
-sudo mv /var/www/churchcrm /var/www/churchcrm
 
 # Set permissions for ChurchCRM
 sudo chown -R www-data:www-data /var/www/churchcrm/
@@ -145,21 +137,6 @@ sudo sed -i '/<IfModule mod_dir.c>/,/<\/IfModule>/c\<IfModule mod_dir.c>\n    Di
 
 # Restart Apache to apply the configuration changes
 sudo systemctl restart apache2
-
-# Prompt user to change login page image and favicon
-read -p "Do you want to change the login page image and favicon? (yes/no): " change_images
-
-if [ "$change_images" == "yes" ]; then
-    read -p "Enter the path to the new login page image: " login_image_path
-    read -p "Enter the path to the new favicon: " favicon_path
-
-    sudo cp "$login_image_path" /var/www/churchcrm/public/images/login.jpg
-    sudo cp "$favicon_path" /var/www/churchcrm/public/images/favicon.ico
-    sudo chown www-data:www-data /var/www/churchcrm/public/images/login.jpg
-    sudo chown www-data:www-data /var/www/churchcrm/public/images/favicon.ico
-    sudo chmod 644 /var/www/churchcrm/public/images/login.jpg
-    sudo chmod 644 /var/www/churchcrm/public/images/favicon.ico
-fi
 
 # Output all new passwords
 echo "Installation and configuration complete. Visit your server's URL to complete the ChurchCRM setup."
