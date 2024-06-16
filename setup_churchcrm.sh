@@ -1,5 +1,7 @@
 #!/bin/bash
 
+FLAG_FILE="/var/tmp/churchcrm_install_flag"
+
 # Function to check if a package is installed
 function check_package() {
     dpkg -l | grep -qw "$1" || sudo apt install -y "$1"
@@ -12,6 +14,64 @@ function prompt_with_default() {
     read -p "$prompt [$default]: " input
     echo "${input:-$default}"
 }
+
+# Function to uninstall packages
+function uninstall_package() {
+    sudo apt remove --purge -y "$1"
+}
+
+# Function to undo MySQL setup
+function undo_mysql_setup() {
+    sudo mysql -u root -p"$new_mysql_password" <<EOF
+DROP DATABASE IF EXISTS churchcrm;
+DROP USER IF EXISTS 'churchcrmuser'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+}
+
+# Function to clean up Apache configuration
+function cleanup_apache() {
+    sudo a2dissite churchcrm.conf
+    sudo rm /etc/apache2/sites-available/churchcrm.conf
+    sudo rm -rf /var/www/churchcrm
+}
+
+# If the script has been run before, undo changes
+if [ -f "$FLAG_FILE" ]; then
+    echo "Script has been run before. Undoing changes..."
+    
+    # Uninstall packages
+    uninstall_package apache2
+    uninstall_package mysql-server
+    uninstall_package unzip
+    uninstall_package jq
+    uninstall_package "php$php_version"
+    uninstall_package "libapache2-mod-php$php_version"
+    uninstall_package "php${php_version}-mysql"
+    uninstall_package "php${php_version}-gmp"
+    uninstall_package "php${php_version}-curl"
+    uninstall_package "php${php_version}-intl"
+    uninstall_package "php${php_version}-mbstring"
+    uninstall_package "php${php_version}-xmlrpc"
+    uninstall_package "php${php_version}-gd"
+    uninstall_package "php${php_version}-bcmath"
+    uninstall_package "php${php_version}-imap"
+    uninstall_package "php${php_version}-xml"
+    uninstall_package "php${php_version}-cli"
+    uninstall_package "php${php_version}-zip"
+
+    # Undo MySQL setup
+    undo_mysql_setup
+
+    # Clean up Apache configuration
+    cleanup_apache
+
+    # Remove the flag file
+    rm -f "$FLAG_FILE"
+
+    echo "Uninstallation complete."
+    exit 0
+fi
 
 # Update package list and upgrade all packages
 sudo apt update
@@ -143,6 +203,9 @@ sudo sed -i '/<IfModule mod_dir.c>/,/<\/IfModule>/c\<IfModule mod_dir.c>\n    Di
 
 # Restart Apache to apply the configuration changes
 sudo systemctl restart apache2
+
+# Mark the installation as complete by creating the flag file
+touch "$FLAG_FILE"
 
 # Output all new passwords
 echo "Installation and configuration complete. Visit your server's URL to complete the ChurchCRM setup."
