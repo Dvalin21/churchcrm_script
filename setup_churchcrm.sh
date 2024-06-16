@@ -60,6 +60,10 @@ php_ini="/etc/php/$php_version/apache2/php.ini"
 # Install PHP and necessary extensions
 sudo apt install -y php libapache2-mod-php php-mysql php-gmp php-curl php-intl php-mbstring php-xmlrpc php-gd php-bcmath php-imap php-xml php-cli php-zip
 
+# Detect installed PHP version
+php_version=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
+php_ini="/etc/php/$php_version/apache2/php.ini"
+
 # Prompt user for PHP settings or use defaults
 read -p "Enter max_execution_time (default 30): " max_execution_time
 max_execution_time=${max_execution_time:-30}
