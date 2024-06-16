@@ -7,11 +7,6 @@ function check_package() {
     dpkg -l | grep -qw "$1" || sudo apt install -y "$1"
 }
 
-# Function to uninstall packages
-function uninstall_package() {
-    sudo apt remove --purge -y "$1"
-}
-
 # Function to undo MySQL setup
 function undo_mysql_setup() {
     read -p "Are you sure you want to undo MySQL setup? This will delete the ChurchCRM database and user. (y/n): " confirm
@@ -27,13 +22,6 @@ EOF
     fi
 }
 
-# Function to clean up Apache configuration
-function cleanup_apache() {
-    sudo a2dissite churchcrm.conf
-    sudo rm /etc/apache2/sites-available/churchcrm.conf
-    sudo rm -rf /var/www/churchcrm
-}
-
 # Function to prompt user input with default values
 function prompt_with_default() {
     local prompt="$1"
@@ -42,7 +30,7 @@ function prompt_with_default() {
     echo "${input:-$default}"
 }
 
-# Function to install or reinstall ChurchCRM
+# Function to install ChurchCRM
 function install_churchcrm() {
     echo "Welcome to ChurchCRM installation script."
     echo "This script will guide you through setting up ChurchCRM on your server."
@@ -188,8 +176,6 @@ EOF"
     echo "Password: changeme"
     echo
     echo "New passwords:"
-    echo "MySQL root password: $new_mysql_password"
-    echo "ChurchCRM database name:
     echo "MySQL root password: $new_mysql_password"
     echo "ChurchCRM database name: churchcrm"
     echo "ChurchCRM database username: churchcrmuser"
