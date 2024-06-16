@@ -18,7 +18,7 @@ sudo apt install -y mysql-server
 sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';"
 
 # Prompt user for MySQL root password and new password
-read -sp "Enter current MySQL root password Hint its password (leave empty if not set): " current_mysql_password
+read -sp "Enter current MySQL root password. Hint: Its password (leave empty if not set): " current_mysql_password
 echo
 read -sp "Enter new MySQL root password: " new_mysql_password
 echo
