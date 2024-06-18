@@ -23,8 +23,8 @@ sudo ufw allow 443
 
 sudo ufw status
 
-# Secure MySQL installation
-sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';"
+# Secure MySQL installation. Hint: password
+sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';"
 
 # Prompt user for MySQL root password and new password
 read -sp "Enter current MySQL root password (leave empty if not set): " current_mysql_password
