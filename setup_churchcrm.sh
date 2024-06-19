@@ -15,13 +15,36 @@ check_package mysql-server
 check_package unzip
 check_package jq
 
-# Allow Apache through the firewall
+# Allow Applications through the firewall
 sudo ufw allow in "Apache"
 sudo ufw allow in "OpenSSH"
 sudo ufw allow 80
-sudo ufw allow 443
-
+sudo ufw enable
 sudo ufw status
+
+# Install fail2ban
+check_package fail2ban || echo "Failed to install fail2ban. Exiting." && exit 1
+
+# Copy default jail.conf to jail.local
+sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local || echo "Failed to copy jail.conf to jail.local. Exiting." && exit 1
+
+# Backup the original jail.local file
+sudo cp /etc/fail2ban/jail.local /etc/fail2ban/jail.local.bak || echo "Failed to backup jail.local. Exiting." && exit 1
+
+# Edit the jail.local configuration
+sudo sed -i 's/^ignoreip = .*/ignoreip = 127.0.0.1/' /etc/fail2ban/jail.local || echo "Failed to update ignoreip in jail.local. Exiting." && exit 1
+sudo sed -i 's/^bantime  = .*/bantime  = 3600/' /etc/fail2ban/jail.local || echo "Failed to update bantime in jail.local. Exiting." && exit 1
+sudo sed -i 's/^findtime = .*/findtime = 600/' /etc/fail2ban/jail.local || echo "Failed to update findtime in jail.local. Exiting." && exit 1
+sudo sed -i 's/^maxretry = .*/maxretry = 3/' /etc/fail2ban/jail.local || echo "Failed to update maxretry in jail.local. Exiting." && exit 1
+
+# Restart the Fail2Ban service to apply changes
+sudo systemctl restart fail2ban || echo "Failed to restart fail2ban. Exiting." && exit 1
+
+# Enable Fail2Ban to start on boot
+sudo systemctl enable fail2ban || echo "Failed to enable fail2ban on boot. Exiting." && exit 1
+
+# Output success message
+echo "Fail2Ban installation and configuration complete."
 
 # Secure MySQL installation. Hint: password
 sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';"
