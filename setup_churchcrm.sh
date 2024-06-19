@@ -65,16 +65,16 @@ php_version=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 php_ini="/etc/php/$php_version/apache2/php.ini"
 
 # Prompt user for PHP settings or use defaults
-read -p "Enter max_execution_time (default 30): " max_execution_time
-max_execution_time=${max_execution_time:-30}
+read -p "Enter max_execution_time (default 60): " max_execution_time
+max_execution_time=${max_execution_time:-60}
 read -p "Enter memory_limit (default 128M): " memory_limit
 memory_limit=${memory_limit:-128M}
-read -p "Enter upload_max_filesize (default 2M): " upload_max_filesize
-upload_max_filesize=${upload_max_filesize:-2M}
+read -p "Enter upload_max_filesize (default 30M): " upload_max_filesize
+upload_max_filesize=${upload_max_filesize:-30M}
 read -p "Enter post_max_size (default 8M): " post_max_size
 post_max_size=${post_max_size:-8M}
-read -p "Enter date.timezone (default UTC): " date_timezone
-date_timezone=${date_timezone:-UTC}
+read -p "Enter timezone (default America/Chicago): " date_timezone
+date_timezone=${date_timezone:-America/Chicago}
 
 # Update PHP settings
 sudo sed -i "s/^max_execution_time = .*/max_execution_time = $max_execution_time/" "$php_ini"
