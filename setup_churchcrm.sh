@@ -22,7 +22,7 @@ sudo ufw allow 80
 sudo ufw enable
 sudo ufw status
 
-# Prompt user for action
+# Prompt user for action disabling password authentication for sshd
 read -p "Do you want to disable password authentication for SSHD (yes/no)? " user_input
 
 if [ "$user_input" = "yes" ] || [ "$user_input" = "Yes" ] || [ "$user_input" = "YES" ]; then
@@ -40,7 +40,7 @@ if [ "$user_input" = "yes" ] || [ "$user_input" = "Yes" ] || [ "$user_input" = "
         if systemctl restart sshd 2>/dev/null; then
             echo "Password authentication for SSHD has been disabled and sshd service restarted."
         elif systemctl restart ssh 2>/dev/null; then
-            echo "Password authentication for SSHD has been disabled and ssh service restarted."
+            echo "Password authentication for SSH has been disabled and ssh service restarted."
         else
             echo "Failed to restart SSH service. Please check the service name."
         fi
@@ -48,15 +48,15 @@ if [ "$user_input" = "yes" ] || [ "$user_input" = "Yes" ] || [ "$user_input" = "
         if service sshd restart 2>/dev/null; then
             echo "Password authentication for SSHD has been disabled and sshd service restarted."
         elif service ssh restart 2>/dev/null; then
-            echo "Password authentication for SSHD has been disabled and ssh service restarted."
+            echo "Password authentication for SSH has been disabled and ssh service restarted."
         else
-            echo "Failed to restart SSHD service. Please check the service name."
+            echo "Failed to restart SSH service. Please check the service name."
         fi
     fi
 elif [ "$user_input" = "no" ] || [ "$user_input" = "No" ] || [ "$user_input" = "NO" ]; then
-    echo "No changes made to SSHD configuration."
+    echo "No changes made to SSH configuration."
 else
-    echo "Invalid input. No changes made to SSHD configuration."
+    echo "Invalid input. No changes made to SSH configuration."
 fi
 
 #!/bin/bash
@@ -220,7 +220,7 @@ sudo chmod -R 755 /var/www/churchcrm/
 two_fa_secret=$(tr -dc '[:alnum:]!@#$%^&*()_+-=[]{}|;:,.<>?' < /dev/urandom | head -c 64)
 
 # Update Config.php with database credentials and 2FA secret key
-config_file="/var/www/churchcrm/Include/Config.php"
+config_file="/var/www/churchcrm/Include/Config.php.example"
 sudo sed -i "s/\$sUSER = '.*';/\$sUSER = 'churchcrmuser';/" "$config_file"
 sudo sed -i "s/\$sPASSWORD = '.*';/\$sPASSWORD = '$db_user_password';/" "$config_file"
 sudo sed -i "s/\$sDATABASE = '.*';/\$sDATABASE = 'churchcrm';/" "$config_file"
