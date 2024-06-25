@@ -115,35 +115,49 @@ echo "Added ignoreip setting to jail.local if it didn't exist"
 echo "Fail2Ban installation and configuration completed successfully."
 
 
-# Secure MySQL installation. Hint: password
-sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';"
-
-# Prompt user for MySQL root password and new password
-read -sp "Enter current MySQL root password (leave empty if not set): " current_mysql_password
-echo
-read -sp "Enter new MySQL root password: " new_mysql_password
-echo
-read -sp "Confirm new MySQL root password: " confirm_mysql_password
-echo
-
-# Check if the new passwords match
-if [ "$new_mysql_password" != "$confirm_mysql_password" ]; then
-    echo "Passwords do not match. Exiting."
-    exit 1
+# Check if script is being run with sudo/root privileges
+if [ "$(id -u)" -ne 0 ]; then
+    # Re-run this script with sudo if not already running as root
+    sudo "$0" "$@"
+    exit $?
 fi
 
-# Run mysql_secure_installation with user inputs
-sudo mysql_secure_installation <<EOF
+# Function to securely prompt for MySQL root password
+prompt_for_password() {
+    while true; do
+        read -s -p "Enter MySQL root password (or press Enter if none): " mysql_root_password
+        echo
+        read -s -p "Confirm MySQL root password: " mysql_root_password_confirm
+        echo
+        [ "$mysql_root_password" = "$mysql_root_password_confirm" ] && break
+        echo "Passwords do not match. Please try again."
+    done
+}
 
-$current_mysql_password
+# Install MySQL Server
+echo "Installing MySQL Server..."
+apt update
+apt install -y mysql-server
+
+# Run mysql_secure_installation script
+echo "Running mysql_secure_installation..."
+
+# Prompt user for MySQL root password
+prompt_for_password
+
+# Here we use a heredoc to provide input to the mysql_secure_installation script non-interactively
+mysql_secure_installation <<EOF
+
 y
-$new_mysql_password
-$new_mysql_password
+$mysql_root_password
+$mysql_root_password
 y
 y
 y
 y
 EOF
+
+echo "MySQL installation and secure setup completed."
 
 # Detect installed PHP version
 php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
