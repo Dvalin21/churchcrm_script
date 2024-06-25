@@ -171,8 +171,8 @@ php_version=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
 php_ini="/etc/php/$php_version/apache2/php.ini"
 
 # Prompt user for PHP settings or use defaults
-read -p "Enter max_execution_time (default 60): " max_execution_time
-max_execution_time=${max_execution_time:-60}
+read -p "Enter max_execution_time (default 180): " max_execution_time
+max_execution_time=${max_execution_time:-180}
 read -p "Enter memory_limit (default 128M): " memory_limit
 memory_limit=${memory_limit:-128M}
 read -p "Enter upload_max_filesize (default 30M): " upload_max_filesize
@@ -224,7 +224,7 @@ config_file="/var/www/churchcrm/Include/Config.php.example"
 sudo sed -i "s/\$sUSER = '.*';/\$sUSER = 'churchcrmuser';/" "$config_file"
 sudo sed -i "s/\$sPASSWORD = '.*';/\$sPASSWORD = '$db_user_password';/" "$config_file"
 sudo sed -i "s/\$sDATABASE = '.*';/\$sDATABASE = 'churchcrm';/" "$config_file"
-sudo sed -i "s/\#TwoFASecretKey = '.*';/\$TwoFASecretKey = '$two_fa_secret';/" "$config_file"
+sudo sed -i "s/\#$TwoFASecretKey = '.*';/\$TwoFASecretKey = '$two_fa_secret';/" "$config_file"
 
 # Prompt user for Apache configuration details
 read -p "Enter ServerAdmin email (e.g., admin@example.com): " server_admin
