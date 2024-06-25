@@ -59,29 +59,61 @@ else
     echo "Invalid input. No changes made to SSH configuration."
 fi
 
-# Install fail2ban
-check_package fail2ban || echo "Failed to install fail2ban. Exiting." && exit 1
+#!/bin/bash
+
+# Function to check if a package is installed
+function check_package() {
+    dpkg -s "$1" >/dev/null 2>&1 || sudo apt install -y "$1"
+}
+
+# Function to prompt user for input with a default value
+function prompt_input() {
+    read -p "$1 (default: $2): " input
+    echo "${input:-$2}"  # Use input if provided, otherwise default to $2
+}
+
+# Function to add a setting if it doesn't exist in a file
+function add_setting_if_not_exists() {
+    local file="$1"
+    local setting="$2"
+    local value="$3"
+
+    if ! grep -q "^$setting = " "$file"; then
+        echo "$setting = $value" | sudo tee -a "$file" >/dev/null
+    fi
+}
+
+# Install fail2ban if not already installed
+check_package fail2ban || { echo "Failed to install fail2ban. Exiting."; exit 1; }
 
 # Copy default jail.conf to jail.local
-sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local || echo "Failed to copy jail.conf to jail.local. Exiting." && exit 1
+sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local || { echo "Failed to copy jail.conf to jail.local. Exiting."; exit 1; }
+echo "Copied jail.conf to jail.local"
 
 # Backup the original jail.local file
-sudo cp /etc/fail2ban/jail.local /etc/fail2ban/jail.local.bak || echo "Failed to backup jail.local. Exiting." && exit 1
+sudo cp /etc/fail2ban/jail.local /etc/fail2ban/jail.local.bak || { echo "Failed to backup jail.local. Exiting."; exit 1; }
+echo "Backed up jail.local to jail.local.bak"
 
-# Edit the jail.local configuration
-sudo sed -i 's/^ignoreip = .*/ignoreip = 127.0.0.1/' /etc/fail2ban/jail.local || echo "Failed to update ignoreip in jail.local. Exiting." && exit 1
-sudo sed -i 's/^bantime  = .*/bantime  = 3600/' /etc/fail2ban/jail.local || echo "Failed to update bantime in jail.local. Exiting." && exit 1
-sudo sed -i 's/^findtime = .*/findtime = 600/' /etc/fail2ban/jail.local || echo "Failed to update findtime in jail.local. Exiting." && exit 1
-sudo sed -i 's/^maxretry = .*/maxretry = 3/' /etc/fail2ban/jail.local || echo "Failed to update maxretry in jail.local. Exiting." && exit 1
+# Prompt user for Fail2ban settings
+bantime=$(prompt_input "Enter bantime in seconds" "3600")
+findtime=$(prompt_input "Enter findtime in seconds or minutes (e.g., 10m for 10 minutes)" "10m")
+maxretry=$(prompt_input "Enter maxretry" "3")
+ignoreip=$(prompt_input "Enter ignoreip (default: 127.0.0.1)" "127.0.0.1")
 
-# Restart the Fail2Ban service to apply changes
-sudo systemctl restart fail2ban || echo "Failed to restart fail2ban. Exiting." && exit 1
+# Update the jail.local configuration with user inputs
+sudo sed -i "s/^bantime  = .*/bantime  = $bantime/" /etc/fail2ban/jail.local || { echo "Failed to update bantime in jail.local. Exiting."; exit 1; }
+echo "Updated bantime in jail.local"
+sudo sed -i "s/^findtime  = .*/findtime  = $findtime/" /etc/fail2ban/jail.local || { echo "Failed to update findtime in jail.local. Exiting."; exit 1; }
+echo "Updated findtime in jail.local"
+sudo sed -i "s/^maxretry = .*/maxretry = $maxretry/" /etc/fail2ban/jail.local || { echo "Failed to update maxretry in jail.local. Exiting."; exit 1; }
+echo "Updated maxretry in jail.local"
 
-# Enable Fail2Ban to start on boot
-sudo systemctl enable fail2ban || echo "Failed to enable fail2ban on boot. Exiting." && exit 1
+# Add ignoreip setting if it doesn't exist
+add_setting_if_not_exists "/etc/fail2ban/jail.local" "ignoreip" "$ignoreip"
+echo "Added ignoreip setting to jail.local if it didn't exist"
 
-# Output success message
-echo "Fail2Ban installation and configuration complete."
+echo "Fail2Ban installation and configuration completed successfully."
+
 
 # Secure MySQL installation. Hint: password
 sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';"
