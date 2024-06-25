@@ -202,7 +202,7 @@ CREATE DATABASE churchcrm;
 CREATE USER 'churchcrmuser'@'localhost' IDENTIFIED BY '$db_user_password';
 GRANT ALL ON churchcrm.* TO 'churchcrmuser'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
-EXIT;
+exit;
 EOF
 
 # Get the latest ChurchCRM release URL
@@ -224,7 +224,7 @@ config_file="/var/www/churchcrm/Include/Config.php.example"
 sudo sed -i "s/\$sUSER = '.*';/\$sUSER = 'churchcrmuser';/" "$config_file"
 sudo sed -i "s/\$sPASSWORD = '.*';/\$sPASSWORD = '$db_user_password';/" "$config_file"
 sudo sed -i "s/\$sDATABASE = '.*';/\$sDATABASE = 'churchcrm';/" "$config_file"
-sudo sed -i "s/\$TwoFASecretKey = '.*';/\$TwoFASecretKey = '$two_fa_secret';/" "$config_file"
+sudo sed -i "s/\#TwoFASecretKey = '.*';/\$TwoFASecretKey = '$two_fa_secret';/" "$config_file"
 
 # Prompt user for Apache configuration details
 read -p "Enter ServerAdmin email (e.g., admin@example.com): " server_admin
