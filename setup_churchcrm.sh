@@ -22,6 +22,43 @@ sudo ufw allow 80
 sudo ufw enable
 sudo ufw status
 
+# Function to modify sshd_config to disable PasswordAuthentication
+disable_password_authentication() 
+    SSHD_CONFIG="/etc/ssh/sshd_config"
+
+    # Backup the sshd_config file
+    cp "$SSHD_CONFIG" "${SSHD_CONFIG}.bak"
+
+    # Uncomment PasswordAuthentication line and set it to no
+    sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' "$SSHD_CONFIG"
+    sed -i 's/^PasswordAuthentication yes/PasswordAuthentication no/' "$SSHD_CONFIG"
+
+    # Restart sshd service
+    if command -v systemctl &> /dev/null
+    then
+        systemctl restart sshd
+    else
+        service sshd restart
+    fi
+
+    echo "Password authentication for SSH has been disabled and sshd service restarted."
+
+
+# Prompt user for action
+read -p "Do you want to disable password authentication for SSH (yes/no)? " user_input
+
+case "$user_input" in
+    yes|Yes|YES)
+        disable_password_authentication
+        ;;
+    no|No|NO)
+        echo "No changes made to SSH configuration."
+        ;;
+    *)
+        echo "Invalid input. No changes made to SSH configuration."
+        ;;
+esac
+
 # Install fail2ban
 check_package fail2ban || echo "Failed to install fail2ban. Exiting." && exit 1
 
