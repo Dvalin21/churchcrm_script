@@ -23,7 +23,7 @@ sudo ufw enable
 sudo ufw status
 
 # Prompt user for action
-read -p "Do you want to disable password authentication for SSH (yes/no)? " user_input
+read -p "Do you want to disable password authentication for SSHD (yes/no)? " user_input
 
 if [ "$user_input" = "yes" ] || [ "$user_input" = "Yes" ] || [ "$user_input" = "YES" ]; then
     SSHD_CONFIG="/etc/ssh/sshd_config"
@@ -38,25 +38,25 @@ if [ "$user_input" = "yes" ] || [ "$user_input" = "Yes" ] || [ "$user_input" = "
     # Restart sshd service
     if command -v systemctl &> /dev/null; then
         if systemctl restart sshd 2>/dev/null; then
-            echo "Password authentication for SSH has been disabled and sshd service restarted."
+            echo "Password authentication for SSHD has been disabled and sshd service restarted."
         elif systemctl restart ssh 2>/dev/null; then
-            echo "Password authentication for SSH has been disabled and ssh service restarted."
+            echo "Password authentication for SSHD has been disabled and ssh service restarted."
         else
             echo "Failed to restart SSH service. Please check the service name."
         fi
     else
         if service sshd restart 2>/dev/null; then
-            echo "Password authentication for SSH has been disabled and sshd service restarted."
+            echo "Password authentication for SSHD has been disabled and sshd service restarted."
         elif service ssh restart 2>/dev/null; then
-            echo "Password authentication for SSH has been disabled and ssh service restarted."
+            echo "Password authentication for SSHD has been disabled and ssh service restarted."
         else
-            echo "Failed to restart SSH service. Please check the service name."
+            echo "Failed to restart SSHD service. Please check the service name."
         fi
     fi
 elif [ "$user_input" = "no" ] || [ "$user_input" = "No" ] || [ "$user_input" = "NO" ]; then
-    echo "No changes made to SSH configuration."
+    echo "No changes made to SSHD configuration."
 else
-    echo "Invalid input. No changes made to SSH configuration."
+    echo "Invalid input. No changes made to SSHD configuration."
 fi
 
 #!/bin/bash
