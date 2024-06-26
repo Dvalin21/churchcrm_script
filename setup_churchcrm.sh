@@ -14,6 +14,7 @@ check_package apache2
 check_package mysql-server
 check_package unzip
 check_package jq
+check_package fail2ban
 
 # Allow Applications through the firewall
 sudo ufw allow in "Apache"
@@ -59,12 +60,6 @@ else
     echo "Invalid input. No changes made to SSH configuration."
 fi
 
-#!/bin/bash
-
-# Function to check if a package is installed
-function check_package() {
-    dpkg -s "$1" >/dev/null 2>&1 || sudo apt install -y "$1"
-}
 
 # Function to prompt user for input with a default value
 function prompt_input() {
@@ -82,9 +77,6 @@ function add_setting_if_not_exists() {
         echo "$setting = $value" | sudo tee -a "$file" >/dev/null
     fi
 }
-
-# Install fail2ban if not already installed
-check_package fail2ban || { echo "Failed to install fail2ban. Exiting."; exit 1; }
 
 # Copy default jail.conf to jail.local
 sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local || { echo "Failed to copy jail.conf to jail.local. Exiting."; exit 1; }
@@ -114,39 +106,14 @@ echo "Added ignoreip setting to jail.local if it didn't exist"
 
 echo "Fail2Ban installation and configuration completed successfully."
 
-
-# Check if script is being run with sudo/root privileges
-if [ "$(id -u)" -ne 0 ]; then
-    # Re-run this script with sudo if not already running as root
-    sudo "$0" "$@"
-    exit $?
-fi
-
-# Function to securely prompt for MySQL root password
-prompt_for_password() {
-    while true; do
-        read -s -p "Enter MySQL root password (or press Enter if none): " mysql_root_password
-        echo
-        read -s -p "Confirm MySQL root password: " mysql_root_password_confirm
-        echo
-        [ "$mysql_root_password" = "$mysql_root_password_confirm" ] && break
-        echo "Passwords do not match. Please try again."
-    done
-}
-
-# Install MySQL Server
-echo "Installing MySQL Server..."
-apt update
-apt install -y mysql-server
-
 # Run mysql_secure_installation script
 echo "Running mysql_secure_installation..."
 
 # Prompt user for MySQL root password
-prompt_for_password
+#prompt_for_password
 
 # Here we use a heredoc to provide input to the mysql_secure_installation script non-interactively
-mysql_secure_installation <<EOF
+sudo mysql_secure_installation <<EOF
 
 y
 $mysql_root_password
@@ -202,7 +169,6 @@ CREATE DATABASE churchcrm;
 CREATE USER 'churchcrmuser'@'localhost' IDENTIFIED BY '$db_user_password';
 GRANT ALL ON churchcrm.* TO 'churchcrmuser'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
-exit;
 EOF
 
 # Get the latest ChurchCRM release URL
@@ -224,7 +190,7 @@ config_file="/var/www/churchcrm/Include/Config.php.example"
 sudo sed -i "s/\$sUSER = '.*';/\$sUSER = 'churchcrmuser';/" "$config_file"
 sudo sed -i "s/\$sPASSWORD = '.*';/\$sPASSWORD = '$db_user_password';/" "$config_file"
 sudo sed -i "s/\$sDATABASE = '.*';/\$sDATABASE = 'churchcrm';/" "$config_file"
-sudo sed -i "s/\#$TwoFASecretKey = '.*';/\$TwoFASecretKey = '$two_fa_secret';/" "$config_file"
+sudo sed -i "#/\#$TwoFASecretKey = '.*';/\$TwoFASecretKey = '$two_fa_secret';/" "$config_file"
 
 # Prompt user for Apache configuration details
 read -p "Enter ServerAdmin email (e.g., admin@example.com): " server_admin
