@@ -110,19 +110,10 @@ echo "Fail2Ban installation and configuration completed successfully."
 echo "Running mysql_secure_installation..."
 
 # Prompt user for MySQL root password
-prompt_for_password
+#prompt_for_password
 
 # Here we use a heredoc to provide input to the mysql_secure_installation script non-interactively
-sudo mysql_secure_installation <<EOF
-
-y
-$mysql_root_password
-$mysql_root_password
-y
-y
-y
-y
-EOF
+sudo mysql_secure_installation
 
 echo "MySQL installation and secure setup completed."
 
@@ -245,7 +236,6 @@ echo "Username: Admin"
 echo "Password: changeme"
 echo
 echo "New passwords:"
-echo "MySQL root password: $new_mysql_password"
 echo "ChurchCRM database name: churchcrm"
 echo "ChurchCRM database username: churchcrmuser"
 echo "ChurchCRM database user password: $db_user_password"
