@@ -109,9 +109,6 @@ echo "Fail2Ban installation and configuration completed successfully."
 # Run mysql_secure_installation script
 echo "Running mysql_secure_installation..."
 
-# Prompt user for MySQL root password
-#prompt_for_password
-
 # Here we use a heredoc to provide input to the mysql_secure_installation script non-interactively
 sudo mysql_secure_installation
 
@@ -173,12 +170,6 @@ sudo unzip ChurchCRM-latest.zip -d /var/www/
 sudo chown -R www-data:www-data /var/www/churchcrm/
 sudo chmod -R 755 /var/www/churchcrm/
 
-
-# Update Config.php with database credentials and 2FA secret key
-config_file="/var/www/churchcrm/Include/Config.php.example"
-sudo sed -i "s/\$sUSER = '.*';/\$sUSER = 'churchcrmuser';/" "$config_file"
-sudo sed -i "s/\$sPASSWORD = '.*';/\$sPASSWORD = '$db_user_password';/" "$config_file"
-sudo sed -i "s/\$sDATABASE = '.*';/\$sDATABASE = 'churchcrm';/" "$config_file"
 
 # Update Config.php with 2FA secret key
 two_fa_secret=$(tr -dc '[:alnum:]!@#$%^&*()_+-=[]{}|;:,.<>?' < /dev/urandom | head -c 64)
