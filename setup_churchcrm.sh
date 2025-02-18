@@ -21,7 +21,6 @@ sudo ufw allow in "Apache"
 sudo ufw allow in "OpenSSH"
 sudo ufw allow 80
 sudo ufw enable
-sudo ufw status
 
 # Prompt user for action disabling password authentication for sshd
 read -p "Do you want to disable password authentication for SSHD (yes/no)? " user_input
@@ -119,7 +118,7 @@ php_version=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
 php_ini="/etc/php/$php_version/apache2/php.ini"
 
 # Install PHP and necessary extensions
-sudo apt install -y php libapache2-mod-php php-mysql php-gmp php-curl php-intl php-mbstring php-xmlrpc php-gd php-bcmath php-imap php-xml php-cli php-zip
+sudo apt install -y php libapache2-mod-php8.3 php-mysql php-gmp php-curl php-intl php-mbstring php-xmlrpc php-gd php-bcmath php-imap php-xml php-cli php-zip #libapache2-mod-php
 
 # Detect installed PHP version
 php_version=$(php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;')
@@ -218,6 +217,9 @@ sudo systemctl restart apache2
 sudo sed -i '/<IfModule mod_dir.c>/,/<\/IfModule>/c\<IfModule mod_dir.c>\n    DirectoryIndex index.php index.html index.cgi index.pl index.xhtml index.htm\n<\/IfModule>' /etc/apache2/mods-enabled/dir.conf
 
 # Restart Apache to apply the configuration changes
+sudo a2enmod php8.3
+sudo a2enmod mpm_prefork
+sudo a2enmod rewrite
 sudo systemctl restart apache2
 
 # Output all new passwords
