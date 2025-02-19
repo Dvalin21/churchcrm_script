@@ -167,8 +167,8 @@ sudo unzip ChurchCRM-latest.zip -d /var/www/
 
 # Set permissions for ChurchCRM
 sudo chown -R www-data:www-data /var/www/churchcrm/
-sudo chmod -R 755 /var/www/churchcrm/
-
+sudo find /var/www/churchcrm -type d -exec chmod 755 {} +
+sudo find /var/www/churchcrm -type f -exec chmod 644 {} +
 
 # Update Config.php with 2FA secret key
 two_fa_secret=$(tr -dc '[:alnum:]!@#$%^&*()_+-=[]{}|;:,.<>?' < /dev/urandom | head -c 64)
